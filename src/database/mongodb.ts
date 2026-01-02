@@ -9,4 +9,4 @@ export const connectDB = async (): Promise<void> => {
     console.error('MongoDB connection error:', error);
     process.exit(1);
   }
-};
+};  
