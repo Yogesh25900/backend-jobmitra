@@ -7,12 +7,8 @@ export const createTalentDto = TalentUserSchema.pick({
   lname: true,
   email: true,
   password: true,
-  dateOfBirth: true,
   phoneNumber: true,
-  location: true,
-  title: true,
-  summary: true,
-  skills: true,
+ 
 }).extend({
   confirmPassword: z.string().min(6, "Confirm password is required"),
 }).refine((data) => data.password === data.confirmPassword, {

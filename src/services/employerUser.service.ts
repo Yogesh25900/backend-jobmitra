@@ -31,7 +31,7 @@ export class EmployerUserService {
   async loginEmployer(loginData: LoginEmployerDTO) {
     const employer = await employerUserRepository.getEmployerByEmail(loginData.email);
     if (!employer) {
-      throw new HttpError(404, "Employer not found");
+      throw new HttpError(404, "User not found");
     }
 
     const validPassword = await bcryptjs.compare(loginData.password, employer.password || "");

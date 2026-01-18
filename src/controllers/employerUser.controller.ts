@@ -7,6 +7,23 @@ import { HttpError } from "../errors/http-error";
 
 const employerUserService = new EmployerUserService();
 
+// Helper function to filter user data
+const filterUserData = (user: any) => {
+  if (!user) return null;
+  const userData = user.toObject ? user.toObject() : user;
+  return {
+    _id: userData._id,
+    companyName: userData.companyName,
+    contactName: userData.contactName,
+    email: userData.email,
+    phoneNumber: userData.phoneNumber,
+    role: userData.role,
+    profilePicturePath: userData.logoPath || userData.googleProfilePicture,
+  };
+};
+
+const filterUsersArray = (users: any[]) => users.map(user => filterUserData(user));
+
 export class EmployerUserController {
   
   async registerEmployer(req: Request, res: Response) {
@@ -23,7 +40,7 @@ export class EmployerUserController {
       return res.status(201).json({
         success: true,
         message: "Employer registered successfully",
-        data: newEmployer,
+        data: filterUserData(newEmployer),
       });
     } catch (error: any) {
       return res.status(500).json({
@@ -46,7 +63,7 @@ export class EmployerUserController {
         success: true,
         message: "Login successful",
         token,
-        data: employer,
+        data: filterUserData(employer),
       });
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({
@@ -62,7 +79,7 @@ export class EmployerUserController {
       const employers = await employerUserService.getAllEmployers();
       return res.status(200).json({
         success: true,
-        data: employers,
+        data: filterUsersArray(employers),
       });
     } catch (error: any) {
       return res.status(500).json({
@@ -78,7 +95,7 @@ export class EmployerUserController {
       const employer = await employerUserService.getEmployerById(req.params.id);
       return res.status(200).json({
         success: true,
-        data: employer,
+        data: filterUserData(employer),
       });
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({
@@ -95,7 +112,7 @@ export class EmployerUserController {
       return res.status(200).json({
         success: true,
         message: "Employer updated successfully",
-        data: updatedEmployer,
+        data: filterUserData(updatedEmployer),
       });
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({
