@@ -1,6 +1,6 @@
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { CreateTalentDTO, LoginTalentDTO } from "../dtos/talentUser.dto";
+import { CreateTalentDTO, LoginTalentDTO,UpdateTalentDTO, } from "../dtos/talentUser.dto";
 import { TalentUserModel } from "../models/talentUser_model";
 import { HttpError } from "../errors/http-error";
 import { JWT_SECRET } from "../config";
@@ -48,7 +48,7 @@ export class TalentUserService {
       role: talent.role,
     };
 
-    const token = jwt.sign(payload, JWT_SECRET as string, { expiresIn: "1h" });
+    const token = jwt.sign(payload, JWT_SECRET as string, { expiresIn: "24h" });
     return { token, talent };
   }
 
@@ -65,12 +65,20 @@ export class TalentUserService {
   }
 
   // Update talent
-  async updateTalent(id: string, updates: Partial<CreateTalentDTO>) {
-    if (updates.password) {
-      updates.password = await bcryptjs.hash(updates.password, 10);
-    }
-    const updatedTalent = await talentUserRepository.updateTalent(id, updates);
-    if (!updatedTalent) throw new HttpError(404, "Talent user not found");
-    return updatedTalent;
+async updateTalent(id: string, updates: UpdateTalentDTO) {
+  // Hash password if it's being updated
+  if (updates.password) {
+    updates.password = await bcryptjs.hash(updates.password, 10);
   }
+
+  // profilePicturePath is optional — just keep it as-is if provided
+  // No extra code needed here unless you want to validate filename
+
+  const updatedTalent = await talentUserRepository.updateTalent(id, updates);
+
+  if (!updatedTalent) throw new HttpError(404, "Talent user not found");
+
+  return updatedTalent;
+}
+
 }
