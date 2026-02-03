@@ -32,7 +32,7 @@ export class TalentUserService {
   async loginTalent(loginData: LoginTalentDTO) {
     const talent = await talentUserRepository.getTalentByEmail(loginData.email);
     if (!talent) {
-      throw new HttpError(404, "Talent not found");
+      throw new HttpError(404, "User  not found");
     }
 
     const validPassword = await bcryptjs.compare(loginData.password, talent.password || "");
@@ -60,7 +60,7 @@ export class TalentUserService {
   // Get talent by ID
   async getTalentById(id: string) {
     const talent = await talentUserRepository.getTalentById(id);
-    if (!talent) throw new HttpError(404, "Talent not found");
+    if (!talent) throw new HttpError(404, "Talent user not found");
     return talent;
   }
 
@@ -70,7 +70,7 @@ export class TalentUserService {
       updates.password = await bcryptjs.hash(updates.password, 10);
     }
     const updatedTalent = await talentUserRepository.updateTalent(id, updates);
-    if (!updatedTalent) throw new HttpError(404, "Talent not found");
+    if (!updatedTalent) throw new HttpError(404, "Talent user not found");
     return updatedTalent;
   }
 }

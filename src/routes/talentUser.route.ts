@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { TalentUserController } from "../controllers/talentUser.controller";
 
-const router = Router();
+const   router = Router();
 const talentController = new TalentUserController();
 
 

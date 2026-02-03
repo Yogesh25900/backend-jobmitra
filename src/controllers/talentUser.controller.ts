@@ -7,6 +7,23 @@ import { HttpError } from "../errors/http-error";
 
 const talentUserService = new TalentUserService();
 
+// Helper function to filter user data
+const filterUserData = (user: any) => {
+  if (!user) return null;
+  const userData = user.toObject ? user.toObject() : user;
+  return {
+    _id: userData._id,
+    fname: userData.fname,
+    lname: userData.lname,
+    email: userData.email,
+    phoneNumber: userData.phoneNumber,
+    role: userData.role,
+    profilePicturePath: userData.profilePicturePath || userData.googleProfilePicture,
+  };
+};
+
+const filterUsersArray = (users: any[]) => users.map(user => filterUserData(user));
+
 export class TalentUserController {
   
   async registerTalent(req: Request, res: Response) {
@@ -23,7 +40,7 @@ export class TalentUserController {
       return res.status(201).json({
         success: true,
         message: "Talent registered successfully",
-        data: newTalent,
+        data: filterUserData(newTalent),
       });
     } catch (error: any) {
       return res.status(500).json({
@@ -46,7 +63,7 @@ export class TalentUserController {
         success: true,
         message: "Login successful",
         token,
-        data: talent,
+        data: filterUserData(talent),
       });
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({
@@ -62,7 +79,7 @@ export class TalentUserController {
       const talents = await talentUserService.getAllTalents();
       return res.status(200).json({
         success: true,
-        data: talents,
+        data: filterUsersArray(talents),
       });
     } catch (error: any) {
       return res.status(500).json({
@@ -78,7 +95,7 @@ export class TalentUserController {
       const talent = await talentUserService.getTalentById(req.params.id);
       return res.status(200).json({
         success: true,
-        data: talent,
+        data: filterUserData(talent),
       });
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({
@@ -95,7 +112,7 @@ export class TalentUserController {
       return res.status(200).json({
         success: true,
         message: "Talent updated successfully",
-        data: updatedTalent,
+        data: filterUserData(updatedTalent),
       });
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({
