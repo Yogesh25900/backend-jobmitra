@@ -4,6 +4,7 @@ export interface ITalentUserRepository {
   createTalent(talentData: Partial<ITalentUser>): Promise<ITalentUser>;
   getTalentByEmail(email: string): Promise<ITalentUser | null>;
   getTalentById(id: string): Promise<ITalentUser | null>;
+  getUserById(id: string): Promise<ITalentUser | null>;
   getAllTalents(): Promise<ITalentUser[]>;
   updateTalent(id: string, updateData: Partial<ITalentUser>): Promise<ITalentUser | null>;
   deleteTalent(id: string): Promise<boolean>;
@@ -24,12 +25,16 @@ export class TalentUserRepository implements ITalentUserRepository {
     return await TalentUserModel.findById(id);
   }
 
+  async getUserById(id: string): Promise<ITalentUser | null> {
+    return await TalentUserModel.findById(id);
+  }
+
   async getAllTalents(): Promise<ITalentUser[]> {
     return await TalentUserModel.find();
   }
 
   async updateTalent(id: string, updateData: Partial<ITalentUser>): Promise<ITalentUser | null> {
-    return await TalentUserModel.findByIdAndUpdate(id, updateData, { new: true });
+    return await TalentUserModel.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
   }
 
   async deleteTalent(id: string): Promise<boolean> {
