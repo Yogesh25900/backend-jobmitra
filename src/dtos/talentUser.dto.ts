@@ -20,6 +20,8 @@ export const createTalentDto = TalentUserSchema.pick({
 
 export const updateTalentDto = TalentUserSchema.partial().extend({
   confirmPassword: z.string().min(6).optional(),
+  profilePicturePath: z.string().optional(), // new optional field for uploaded file
+
 }).refine((data) => {
   if (data.password || data.confirmPassword) {
     return data.password === data.confirmPassword;

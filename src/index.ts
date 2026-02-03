@@ -1,21 +1,21 @@
-import express, { Application } from 'express';
-import bodyParser from 'body-parser';
-import cors from 'cors';
+import http from 'http';
+
 import { PORT } from './config';
-import { connectDB } from './database/mongodb';
-import talentUserRoutes from './routes/talentUser.route';
-import employerRoute from './routes/employerUser.route';
-const app: Application = express();
+import app from './app';
+import { initSocket } from './socket';
 
-connectDB();
-app.use(cors());
-app.use(bodyParser.json());
 
-app.use('/api/talent', talentUserRoutes);
-app.use('/api/employer', employerRoute);
-app.listen(PORT, () => {
+
+// seedCategories().catch((error) => {
+//   console.error("Failed to seed categories:", error);
+//   process.exit(1);
+// });
+
+const server = http.createServer(app);
+initSocket(server);
+
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-
 });
 
 export default app;

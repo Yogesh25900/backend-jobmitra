@@ -46,7 +46,7 @@ export class EmployerUserService {
       role: employer.role,
     };
 
-    const token = jwt.sign(payload, JWT_SECRET as string, { expiresIn: "1h" });
+    const token = jwt.sign(payload, JWT_SECRET as string, { expiresIn: "24h" });
     return { token, employer };
   }
 
