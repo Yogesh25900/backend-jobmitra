@@ -12,4 +12,5 @@ export const MONGODB_URI = process.env.MONGODB_URL;
 
 
 
-export const JWT_SECRET = process.env.JWT_SECRET ;
+export const JWT_SECRET = process.env.JWT_SECRET;
+export const PYTHON_API = process.env.PYTHON_API || "http://127.0.0.1:8000";
