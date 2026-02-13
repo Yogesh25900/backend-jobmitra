@@ -54,6 +54,8 @@ const talentUserSchema: Schema = new Schema(
       github: { type: String, default: "" },
       portfolio: { type: String, default: "" },
     },
+    passwordResetOtp: { type: String, default: "" },
+    passwordResetOtpExpires: { type: Date },
   },
   {
     timestamps: true, // includes createdAt and updatedAt
