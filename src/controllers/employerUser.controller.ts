@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 
 import z from "zod";
 import { EmployerUserService } from "../services/employerUser.service";
-import { createEmployerDto, loginEmployerDto } from "../dtos/employerUser.dto";
+import { createEmployerDto, loginEmployerDto, verifyOTPDto, resetPasswordDto, verifyOtpAndResetPasswordDto } from "../dtos/employerUser.dto";
 import { HttpError } from "../errors/http-error";
 
 const employerUserService = new EmployerUserService();
@@ -15,9 +15,18 @@ const filterUserData = (user: any) => {
     _id: userData._id,
     companyName: userData.companyName,
     contactName: userData.contactName,
+    contactEmail: userData.contactEmail,
     email: userData.email,
     phoneNumber: userData.phoneNumber,
     role: userData.role,
+    industry: userData.industry,
+    location: userData.location,
+    companySize: userData.companySize,
+    website: userData.website,
+    description: userData.description,
+    socialLinks: userData.socialLinks,
+    logoPath: userData.logoPath,
+    googleProfilePicture: userData.googleProfilePicture,
     profilePicturePath: userData.logoPath || userData.googleProfilePicture,
   };
 };
@@ -108,11 +117,120 @@ export class EmployerUserController {
 
   async updateEmployer(req: Request, res: Response) {
     try {
-      const updatedEmployer = await employerUserService.updateEmployer(req.params.id, req.body);
+      const updates = { ...req.body } as any;
+      if (req.file) {
+        updates.logoPath = req.file.filename;
+      }
+
+      const updatedEmployer = await employerUserService.updateEmployer(req.params.id, updates);
       return res.status(200).json({
         success: true,
         message: "Employer updated successfully",
         data: filterUserData(updatedEmployer),
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  // Send password reset OTP
+  async sendPasswordResetOtp(req: Request, res: Response) {
+    try {
+      const parsedData = z.object({
+        email: z.string().min(1, "Email is required").email("Invalid email format"),
+      }).safeParse(req.body);
+
+      if (!parsedData.success) {
+        return res.status(400).json({
+          success: false,
+          message: z.prettifyError(parsedData.error),
+        });
+      }
+
+      const result = await employerUserService.sendPasswordResetOtp(parsedData.data);
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        data: { email: result.email },
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  // Verify OTP (step 2 of password reset)
+  async verifyOTP(req: Request, res: Response) {
+    try {
+      const parsedData = verifyOTPDto.safeParse(req.body);
+
+      if (!parsedData.success) {
+        return res.status(400).json({
+          success: false,
+          message: parsedData.error.format(),
+        });
+      }
+
+      const result = await employerUserService.verifyOTP(parsedData.data);
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        data: { email: result.email },
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  // Reset password (step 3 of password reset)
+  async resetPassword(req: Request, res: Response) {
+    try {
+      const parsedData = resetPasswordDto.safeParse(req.body);
+
+      if (!parsedData.success) {
+        return res.status(400).json({
+          success: false,
+          message: parsedData.error.format(),
+        });
+      }
+
+      const result = await employerUserService.resetPassword(parsedData.data);
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  // Verify OTP and reset password (backward compatibility)
+  async verifyOtpAndResetPassword(req: Request, res: Response) {
+    try {
+      const parsedData = verifyOtpAndResetPasswordDto.safeParse(req.body);
+
+      if (!parsedData.success) {
+        return res.status(400).json({
+          success: false,
+          message: z.prettifyError(parsedData.error),
+        });
+      }
+
+      const result = await employerUserService.verifyOtpAndResetPassword(parsedData.data);
+      return res.status(200).json({
+        success: true,
+        message: result.message,
       });
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({

@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 
 import z from "zod";
 import { TalentUserService } from "../services/talentUser.service";
-import { createTalentDto, loginTalentDto } from "../dtos/talentUser.dto";
+import { createTalentDto, loginTalentDto, verifyOtpAndResetPasswordDto, verifyOTPDto, resetPasswordDto } from "../dtos/talentUser.dto";
 import { HttpError } from "../errors/http-error";
 import asyncHandler from "../middlewares/async";
 import { sendToPython } from "../services/python.service";
@@ -389,5 +389,122 @@ async updateTalent(req: Request, res: Response) {
     });
   }
 );
+
+  // Send password reset OTP
+ async sendPasswordResetOtp(req: Request, res: Response) {
+    try {
+      // Validate request body
+      const parsedData = z.object({
+        email: z.string().min(1, "Email is required").email("Invalid email format"),
+      }).safeParse(req.body);
+
+      if (!parsedData.success) {
+        return res.status(400).json({
+          success: false,
+          message: parsedData.error.format(), // use format() for readable errors
+        });
+      }
+
+      // Call service
+      const result = await talentUserService.sendPasswordResetOtp(parsedData.data);
+
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        data: { email: parsedData.data.email },
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  // Verify OTP (step 2 of password reset)
+  async verifyOTP(req: Request, res: Response) {
+    try {
+      // Validate request
+      const parsedData = verifyOTPDto.safeParse(req.body);
+
+      if (!parsedData.success) {
+        return res.status(400).json({
+          success: false,
+          message: parsedData.error.format(),
+        });
+      }
+
+      // Call service
+      const result = await talentUserService.verifyOTP(parsedData.data);
+
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        data: { email: result.email },
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  // Reset password (step 3 of password reset)
+  async resetPassword(req: Request, res: Response) {
+    try {
+      // Validate request
+      const parsedData = resetPasswordDto.safeParse(req.body);
+
+      if (!parsedData.success) {
+        return res.status(400).json({
+          success: false,
+          message: parsedData.error.format(),
+        });
+      }
+
+      // Call service
+      const result = await talentUserService.resetPassword(parsedData.data);
+
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+ async verifyOtpAndResetPassword(req: Request, res: Response) {
+    try {
+      // Import DTO
+
+      // Validate request
+      const parsedData = verifyOtpAndResetPasswordDto.safeParse(req.body);
+
+      if (!parsedData.success) {
+        return res.status(400).json({
+          success: false,
+          message: parsedData.error.format(), // readable errors
+        });
+      }
+
+      // Call service
+      const result = await talentUserService.verifyOtpAndResetPassword(parsedData.data);
+
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
 
 }
