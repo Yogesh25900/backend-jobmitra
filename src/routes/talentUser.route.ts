@@ -63,4 +63,17 @@ router.put("/:id", protect, uploadFiles.single('resume'), parseJsonFields, (req,
   return talentController.updateTalent(req, res);
 });
 
+// Password reset routes
+// Step 1: Request OTP via email
+router.post('/forgot-password', parseFormData, (req, res) => talentController.sendPasswordResetOtp(req, res));
+
+// Step 2: Verify OTP (NEW ENDPOINT)
+router.post('/verify-otp', parseFormData, (req, res) => talentController.verifyOTP(req, res));
+
+// Step 3: Reset password with new password (NEW ENDPOINT)
+router.post('/reset-password', parseFormData, (req, res) => talentController.resetPassword(req, res));
+
+// Backward compatibility: Combined endpoint (deprecated, but maintained for older clients)
+router.post('/reset-password-legacy', parseFormData, (req, res) => talentController.verifyOtpAndResetPassword(req, res));
+
 export default router;

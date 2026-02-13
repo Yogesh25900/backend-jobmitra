@@ -1,4 +1,4 @@
-import { IEmployerUser, EmployerUserModel } from "../models/employerUser_model";
+import { IEmployerUser, EmployerUserModel } from "../models/employerUser.model";
 
 export interface IEmployerUserRepository {
   createEmployer(employerData: Partial<IEmployerUser>): Promise<IEmployerUser>;
