@@ -14,7 +14,7 @@ export class AdminService {
   async createAdmin(adminData: Partial<IAdminUser>) {
     const existingAdmin = await adminRepository.getAdminByEmail(adminData.email!);
     if (existingAdmin) {
-      throw new Error("Admin with this email already exists.");
+      throw new HttpError(400, "Admin with this email already exists.");
     }
     const hashedPassword = await bcryptjs.hash(adminData.password!, 10);
    const newAdmin = await adminRepository.createAdmin({ ...adminData, password: hashedPassword,role: "admin" });
@@ -24,11 +24,11 @@ export class AdminService {
   async loginAdmin(email: string, password: string) {
     const admin = await adminRepository.getAdminByEmail(email);
     if (!admin) {
-      throw new Error("Admin not found.");
+      throw new HttpError(401, "Admin not found.");
     }
     const isPasswordValid = await bcryptjs.compare(password, admin.password);
     if (!isPasswordValid) {
-      throw new Error("Invalid password.");
+      throw new HttpError(401, "Invalid password.");
     }
     return admin;
   }

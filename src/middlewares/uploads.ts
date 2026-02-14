@@ -36,6 +36,9 @@ const storage: StorageEngine = multer.diskStorage({
       case 'coverLetterDocument':
         folder = path.join('public', 'cover_letters');
         break;
+      case 'logoPath':
+        folder = path.join('public', 'logos');
+        break;
       default:
         cb(new Error('Invalid field name for upload.'), '');
         return;
@@ -53,6 +56,9 @@ const storage: StorageEngine = multer.diskStorage({
     let prefix = 'file';
 
     switch (file.fieldname) {
+      case 'logoPath':
+        prefix = 'logo';
+        break;
       case 'profilePicture':
         prefix = 'pro-pic';
         break;
@@ -88,6 +94,7 @@ const fileFilter = (
       cb(null, true);
       break;
 
+    case 'logoPath':
     case 'profilePicture':
     case 'itemPhoto':
       if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/i)) {
