@@ -4,7 +4,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
-    "test": "jest --verbose --detectOpenHandles"
+    "test": "jest --verbose --detectOpenHandles",
+    "test:coverage": "jest --coverage",
+    "test:coverage:related": "jest --coverage --findRelatedTests"
   },
   "keywords": [],
   "author": "",
@@ -22,7 +24,10 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "form-data": "^4.0.0",
+    "framer-motion": "^12.34.3",
+    "google-auth-library": "^10.5.0",
     "jsonwebtoken": "^9.0.3",
+    "meilisearch": "^0.55.0",
     "mongoose": "^9.1.0",
     "multer": "^2.0.2",
     "nodemailer": "^8.0.0",
