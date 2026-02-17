@@ -39,6 +39,12 @@ const storage: StorageEngine = multer.diskStorage({
       case 'logoPath':
         folder = path.join('public', 'logos');
         break;
+      case 'screenshot':
+        folder = path.join('public', 'feedback_screenshots');
+        break;
+      case 'attachment':
+        folder = path.join('public', 'feedback_attachments');
+        break;
       default:
         cb(new Error('Invalid field name for upload.'), '');
         return;
@@ -73,6 +79,12 @@ const storage: StorageEngine = multer.diskStorage({
         break;
       case 'coverLetterDocument':
         prefix = 'cover-letter';
+        break;
+      case 'screenshot':
+        prefix = 'feedback-screenshot';
+        break;
+      case 'attachment':
+        prefix = 'feedback-attachment';
         break;
     }
 
@@ -113,6 +125,22 @@ const fileFilter = (
       cb(null, true);
       break;
 
+    case 'screenshot':
+      if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/i)) {
+        cb(new Error('Screenshot must be an image (JPG, PNG, GIF).'));
+        return;
+      }
+      cb(null, true);
+      break;
+
+    case 'attachment':
+      if (!file.originalname.match(/\.(pdf|doc|docx|txt)$/i)) {
+        cb(new Error('Attachment must be PDF, DOC, DOCX, or TXT format.'));
+        return;
+      }
+      cb(null, true);
+      break;
+
     default:
       cb(new Error('Invalid field name for upload.'));
   }
@@ -142,6 +170,12 @@ export const uploadResume = multer({
   storage,
   fileFilter,
   limits: { fileSize: maxSize },
+});
+
+export const uploadFeedback = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB for feedback attachments
 });
 
 // Parse form fields only (no files)
