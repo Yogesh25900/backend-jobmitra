@@ -1,16 +1,38 @@
 import { Request, Response } from "express";
-
 import z from "zod";
 import { EmployerUserService } from "../services/employerUser.service";
-import { createEmployerDto, loginEmployerDto, verifyOTPDto, resetPasswordDto, verifyOtpAndResetPasswordDto } from "../dtos/employerUser.dto";
+import { createEmployerDto, googleLoginEmployerDto, loginEmployerDto, verifyOTPDto, resetPasswordDto, verifyOtpAndResetPasswordDto } from "../dtos/employerUser.dto";
 import { HttpError } from "../errors/http-error";
 
 const employerUserService = new EmployerUserService();
 
-// Helper function to filter user data
-const filterUserData = (user: any) => {
+const buildAbsoluteLogoUrl = (req: Request, logoPath?: string | null) => {
+  if (!logoPath) {
+    return "";
+  }
+
+  const normalized = logoPath.trim();
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+    return normalized;
+  }
+
+  const cleanPath = normalized.replace(/^\/+/, "");
+  if (cleanPath.startsWith("logos/")) {
+    return `${req.protocol}://${req.get("host")}/${cleanPath}`;
+  }
+
+  return `${req.protocol}://${req.get("host")}/logos/${cleanPath}`;
+};
+
+const filterUserData = (user: any, req: Request) => {
   if (!user) return null;
   const userData = user.toObject ? user.toObject() : user;
+  const logoUrl = buildAbsoluteLogoUrl(req, userData.logoPath);
+
   return {
     _id: userData._id,
     companyName: userData.companyName,
@@ -25,13 +47,13 @@ const filterUserData = (user: any) => {
     website: userData.website,
     description: userData.description,
     socialLinks: userData.socialLinks,
-    logoPath: userData.logoPath,
+    logoPath: logoUrl,
     googleProfilePicture: userData.googleProfilePicture,
-    profilePicturePath: userData.logoPath || userData.googleProfilePicture,
+    profilePicturePath: logoUrl || userData.googleProfilePicture,
   };
 };
 
-const filterUsersArray = (users: any[]) => users.map(user => filterUserData(user));
+const filterUsersArray = (users: any[], req: Request) => users.map((user) => filterUserData(user, req));
 
 export class EmployerUserController {
   
@@ -49,7 +71,7 @@ export class EmployerUserController {
       return res.status(201).json({
         success: true,
         message: "Employer registered successfully",
-        data: filterUserData(newEmployer),
+        data: filterUserData(newEmployer, req),
       });
     } catch (error: any) {
       return res.status(500).json({
@@ -72,7 +94,29 @@ export class EmployerUserController {
         success: true,
         message: "Login successful",
         token,
-        data: filterUserData(employer),
+        data: filterUserData(employer, req),
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
+  async googleLoginEmployer(req: Request, res: Response) {
+    try {
+      const parsedData = googleLoginEmployerDto.safeParse(req.body);
+      if (!parsedData.success) {
+        throw new HttpError(400, "Google credential is required");
+      }
+
+      const { token, employer, isNewUser } = await employerUserService.googleLoginEmployer(parsedData.data.credential);
+      return res.status(200).json({
+        success: true,
+        message: isNewUser ? "Google signup successful" : "Google login successful",
+        token,
+        data: filterUserData(employer, req),
       });
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({
@@ -88,7 +132,7 @@ export class EmployerUserController {
       const employers = await employerUserService.getAllEmployers();
       return res.status(200).json({
         success: true,
-        data: filterUsersArray(employers),
+        data: filterUsersArray(employers, req),
       });
     } catch (error: any) {
       return res.status(500).json({
@@ -104,7 +148,7 @@ export class EmployerUserController {
       const employer = await employerUserService.getEmployerById(req.params.id);
       return res.status(200).json({
         success: true,
-        data: filterUserData(employer),
+        data: filterUserData(employer, req),
       });
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({
@@ -126,7 +170,7 @@ export class EmployerUserController {
       return res.status(200).json({
         success: true,
         message: "Employer updated successfully",
-        data: filterUserData(updatedEmployer),
+        data: filterUserData(updatedEmployer, req),
       });
     } catch (error: any) {
       return res.status(error.statusCode || 500).json({
