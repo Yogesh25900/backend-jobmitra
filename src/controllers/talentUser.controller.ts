@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 
 import z from "zod";
 import { TalentUserService } from "../services/talentUser.service";
-import { createTalentDto, loginTalentDto, verifyOtpAndResetPasswordDto, verifyOTPDto, resetPasswordDto } from "../dtos/talentUser.dto";
+import { createTalentDto, googleLoginTalentDto, loginTalentDto, verifyOtpAndResetPasswordDto, verifyOTPDto, resetPasswordDto } from "../dtos/talentUser.dto";
 import { HttpError } from "../errors/http-error";
 import asyncHandler from "../middlewares/async";
 import { sendToPython } from "../services/python.service";
@@ -98,6 +98,28 @@ export class TalentUserController {
     }
   }
 
+  async googleLoginTalent(req: Request, res: Response) {
+    try {
+      const parsedData = googleLoginTalentDto.safeParse(req.body);
+      if (!parsedData.success) {
+        throw new HttpError(400, "Google credential is required");
+      }
+
+      const { token, talent, isNewUser } = await talentUserService.googleLoginTalent(parsedData.data.credential);
+      return res.status(200).json({
+        success: true,
+        message: isNewUser ? "Google signup successful" : "Google login successful",
+        token,
+        data: filterUserData(talent),
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+
 
   async getAllTalents(req: Request, res: Response) {
     try {
@@ -132,34 +154,34 @@ export class TalentUserController {
 
 
 async updateTalent(req: Request, res: Response) {
-  console.log("\n🔥🔥🔥 updateTalent controller HIT 🔥🔥🔥");
+  console.log("updateTalent controller HIT ");
   console.log("Raw req.body type:", typeof req.body);
   console.log("Raw req.body:", JSON.stringify(req.body, null, 2));
 
   try {
-    console.log("=== UPDATE TALENT START ===");
+    console.log("UPDATE TALENT START ");
     
     if (req.file) {
       const { fieldname, filename, path } = req.file;
-      console.log("📎 File received:", { fieldname, filename, path });
+      console.log("File received:", { fieldname, filename, path });
 
       if (fieldname === "resume") {
         req.body.cvPath = filename;
-        console.log("✓ Resume uploaded:", filename);
+        console.log("Resume uploaded:", filename);
       } else if (fieldname === "profilePicture") {
         req.body.profilePicturePath = filename;
-        console.log("✓ Profile picture uploaded:", filename);
+        console.log("Profile picture uploaded:", filename);
       }
     }
 
     // Fields that need JSON parsing from FormData
     const jsonFields = ["skills", "experiences", "education", "certifications", "portfolio", "links"];
 
-    console.log(`\n🔍 Starting to parse ${jsonFields.length} JSON fields...`);
+    console.log(` Starting to parse ${jsonFields.length} JSON fields...`);
 
     // Parse all JSON string fields
     for (const field of jsonFields) {
-      console.log(`\n▶ Processing field: ${field}`);
+      console.log(` Processing field: ${field}`);
       console.log(`   Field exists in body?`, field in req.body);
       
       if (field in req.body) {
@@ -170,15 +192,15 @@ async updateTalent(req: Request, res: Response) {
 
         // Skip if not a string (already parsed or doesn't exist)
         if (typeof value !== "string") {
-          console.log(`   [${field}] ✓ Already parsed or not a string, keeping as-is`);
+          console.log(`   [${field}] Already parsed or not a string, keeping as-is`);
           continue;
         }
 
         // Handle empty strings
         if (value.trim() === "" || value === "[]" || value === "{}") {
-          console.log(`   [${field}] ⚠ Empty/default value, setting to default array`);
+          console.log(`   [${field}] Empty/default value, setting to default array`);
           req.body[field] = [];
-          console.log(`   [${field}] ✓ Set to:`, req.body[field]);
+          console.log(`   [${field}]  Set to:`, req.body[field]);
           continue;
         }
 
@@ -186,26 +208,26 @@ async updateTalent(req: Request, res: Response) {
         try {
           console.log(`   [${field}] Attempting JSON.parse...`);
           const parsed = JSON.parse(value);
-          console.log(`   [${field}] ✓ Parsed successfully:`, parsed);
+          console.log(`   [${field}] Parsed successfully:`, parsed);
           
           // Ensure it's an array or object, not a primitive
           if (Array.isArray(parsed) || typeof parsed === "object") {
             req.body[field] = parsed;
-            console.log(`   [${field}] ✓ Assigned to body`);
+            console.log(`   [${field}] Assigned to body`);
           } else {
-            console.log(`   [${field}] ⚠ Parsed value is not array/object, deleting`);
+            console.log(`   [${field}] Parsed value is not array/object, deleting`);
             delete req.body[field];
           }
         } catch (err) {
-          console.log(`   [${field}] ✗ Parse failed:`, (err as Error).message);
+          console.log(`   [${field}]  Parse failed:`, (err as Error).message);
           // If we can't parse it, don't send it to Mongoose
           delete req.body[field];
-          console.log(`   [${field}] ✓ Deleted from body`);
+          console.log(`   [${field}] Deleted from body`);
         }
       }
     }
 
-    console.log("\n📋 Final body before save:");
+    console.log(" Final body before save:");
     console.log(JSON.stringify(req.body, null, 2));
 
     // Remove empty objects from arrays (optional strict mode)
@@ -232,7 +254,7 @@ async updateTalent(req: Request, res: Response) {
     };
     cleanArrays(req.body);
 
-    console.log("\n📊 FINAL UPDATE BODY (about to save to DB):");
+    console.log(" FINAL UPDATE BODY (about to save to DB):");
     console.log(JSON.stringify(req.body, null, 2));
 
     const updatedTalent = await talentUserService.updateTalent(
@@ -273,7 +295,7 @@ async updateTalent(req: Request, res: Response) {
       }
     }
 
-    console.log("=== ✅ UPDATE SUCCESS ===\n");
+    console.log("===UPDATE SUCCESS ===\n");
 
     return res.status(200).json({
       success: true,
@@ -282,7 +304,7 @@ async updateTalent(req: Request, res: Response) {
     });
 
   } catch (error: any) {
-    console.error("\n=== ❌ UPDATE ERROR ===");
+    console.error(" UPDATE ERROR ===");
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
     console.error("Full error:", error);
@@ -324,12 +346,12 @@ async updateTalent(req: Request, res: Response) {
  uploadProfilePhoto = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     console.log('\n' + '='.repeat(70));
-    console.log('📸 [CONTROLLER] uploadProfilePhoto - Processing image upload');
+    console.log('[CONTROLLER] uploadProfilePhoto - Processing image upload');
     console.log('='.repeat(70));
 
     // Check if file is present
     if (!req.file) {
-      console.log('❌ No file in request');
+      console.log('No file in request');
       return res.status(400).json({
         success: false,
         statusCode: 400,
@@ -337,7 +359,7 @@ async updateTalent(req: Request, res: Response) {
       });
     }
 
-    console.log('📎 File received in request');
+    console.log(' File received in request');
     console.log('   - fieldname:', req.file.fieldname);
     console.log('   - filename:', req.file.filename);
     console.log('   - size:', req.file.size, 'bytes');
@@ -346,7 +368,7 @@ async updateTalent(req: Request, res: Response) {
     // Optional: check file size limit from env
     const maxFileUpload = parseInt(process.env.MAX_FILE_UPLOAD || '0', 10);
     if (maxFileUpload > 0 && req.file.size > maxFileUpload) {
-      console.log('❌ ERROR: File too large');
+      console.log(' ERROR: File too large');
       return res.status(400).json({
         success: false,
         statusCode: 400,
@@ -357,12 +379,12 @@ async updateTalent(req: Request, res: Response) {
     // Map file to body field
     if (req.file.fieldname === 'resume') {
       req.body.cvPath = req.file.filename;
-      console.log('✓ Resume uploaded:', req.file.filename);
+      console.log(' Resume uploaded:', req.file.filename);
     } else if (req.file.fieldname === 'profilePicture') {
       req.body.profilePicturePath = req.file.filename;
-      console.log('✓ Profile picture uploaded:', req.file.filename);
+      console.log(' Profile picture uploaded:', req.file.filename);
     } else {
-      console.log('❌ Invalid file field:', req.file.fieldname);
+      console.log(' Invalid file field:', req.file.fieldname);
       return res.status(400).json({
         success: false,
         statusCode: 400,
@@ -372,14 +394,14 @@ async updateTalent(req: Request, res: Response) {
 
     // Get current user ID (from auth middleware)
     const userId = req.user._id;
-    console.log('✓ User ID:', userId);
+    console.log(' User ID:', userId);
 
     // Update user with profile picture
     const updatedUser = await talentUserService.updateTalent(userId, {
       profilePicturePath: req.file.filename,
     });
 
-    console.log('✓ Profile photo saved:', req.file.filename);
+    console.log(' Profile photo saved:', req.file.filename);
     console.log('='.repeat(70) + '\n');
 
     res.status(200).json({
