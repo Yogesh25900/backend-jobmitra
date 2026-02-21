@@ -3,6 +3,7 @@ import { ITalentUser, TalentUserModel } from "../models/talentUser_model";
 export interface ITalentUserRepository {
   createTalent(talentData: Partial<ITalentUser>): Promise<ITalentUser>;
   getTalentByEmail(email: string): Promise<ITalentUser | null>;
+  getTalentByGoogleId(googleId: string): Promise<ITalentUser | null>;
   getTalentById(id: string): Promise<ITalentUser | null>;
   getUserById(id: string): Promise<ITalentUser | null>;
   getAllTalents(): Promise<ITalentUser[]>;
@@ -19,6 +20,10 @@ export class TalentUserRepository implements ITalentUserRepository {
 
   async getTalentByEmail(email: string): Promise<ITalentUser | null> {
     return await TalentUserModel.findOne({ email });
+  }
+
+  async getTalentByGoogleId(googleId: string): Promise<ITalentUser | null> {
+    return await TalentUserModel.findOne({ googleId });
   }
 
   async getTalentById(id: string): Promise<ITalentUser | null> {
