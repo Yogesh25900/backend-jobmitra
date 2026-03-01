@@ -1,0 +1,1319 @@
+openapi: 3.0.3
+info:
+  title: JobMitra Backend API
+  version: 1.0.0
+  description: |
+    OpenAPI specification for JobMitra backend (Node.js + Express).
+    Supports candidate, employer, and admin workflows for authentication, jobs, and applications.
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+
+tags:
+  - name: System
+  - name: Talent Auth/Profile
+  - name: Employer Auth/Profile
+  - name: Admin
+  - name: Jobs
+  - name: Applications
+  - name: Saved Jobs
+  - name: Notifications
+  - name: Categories
+  - name: Feedback
+  - name: Recommendation
+  - name: Extracted Candidate
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+                  ip:
+                    type: string
+                    example: 192.168.1.10
+
+  /api/talentusers/register:
+    post:
+      tags: [Talent Auth/Profile]
+      summary: Register talent user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TalentRegisterRequest'
+      responses:
+        '201':
+          description: Talent registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/talentusers/login:
+    post:
+      tags: [Talent Auth/Profile]
+      summary: Login talent user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/talentusers/google-login:
+    post:
+      tags: [Talent Auth/Profile]
+      summary: Login/signup talent with Google
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential]
+              properties:
+                credential:
+                  type: string
+      responses:
+        '200':
+          description: Google auth success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+
+  /api/talentusers/profile/me:
+    get:
+      tags: [Talent Auth/Profile]
+      summary: Get current talent profile
+      responses:
+        '200':
+          description: Profile fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/talentusers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Talent Auth/Profile]
+      summary: Get talent by ID
+      security: []
+      responses:
+        '200':
+          description: Talent fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Talent Auth/Profile]
+      summary: Update talent profile (supports resume upload)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                fname:
+                  type: string
+                lname:
+                  type: string
+                phoneNumber:
+                  type: string
+                location:
+                  type: string
+                summary:
+                  type: string
+                skills:
+                  type: string
+                  description: JSON string array
+                  example: '["Flutter","Dart"]'
+                experiences:
+                  type: string
+                  description: JSON string array
+                resume:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Talent updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/talentusers/upload-photo:
+    post:
+      tags: [Talent Auth/Profile]
+      summary: Upload talent profile picture
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [profilePicture]
+              properties:
+                profilePicture:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Photo uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/employerusers/register:
+    post:
+      tags: [Employer Auth/Profile]
+      summary: Register employer user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployerRegisterRequest'
+      responses:
+        '201':
+          description: Employer registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+
+  /api/employerusers/login:
+    post:
+      tags: [Employer Auth/Profile]
+      summary: Login employer user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+
+  /api/employerusers/google-login:
+    post:
+      tags: [Employer Auth/Profile]
+      summary: Login/signup employer with Google
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential]
+              properties:
+                credential:
+                  type: string
+      responses:
+        '200':
+          description: Google auth success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+
+  /api/employerusers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Employer Auth/Profile]
+      summary: Get employer by ID
+      security: []
+      responses:
+        '200':
+          description: Employer fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    put:
+      tags: [Employer Auth/Profile]
+      summary: Update employer profile (logo upload supported)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                companyName:
+                  type: string
+                contactName:
+                  type: string
+                phoneNumber:
+                  type: string
+                logoPath:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Employer updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/admin/register:
+    post:
+      tags: [Admin]
+      summary: Register admin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRegisterRequest'
+      responses:
+        '201':
+          description: Admin registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/admin/login:
+    post:
+      tags: [Admin]
+      summary: Login admin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      summary: Get all users (admin)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 10 }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: role
+          schema: { type: string }
+      responses:
+        '200':
+          description: Users list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    post:
+      tags: [Admin]
+      summary: Create user as admin
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                userType:
+                  type: string
+                  enum: [talent, employer]
+                role:
+                  type: string
+                  enum: [candidate, employer]
+                email:
+                  type: string
+                password:
+                  type: string
+                fname:
+                  type: string
+                lname:
+                  type: string
+                companyName:
+                  type: string
+                contactName:
+                  type: string
+                profilePicture:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/admin/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Admin]
+      summary: Get user by ID (admin)
+      responses:
+        '200':
+          description: User fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    put:
+      tags: [Admin]
+      summary: Update user by ID (admin)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                fname: { type: string }
+                lname: { type: string }
+                phoneNumber: { type: string }
+                companyName: { type: string }
+                profilePicture: { type: string, format: binary }
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    delete:
+      tags: [Admin]
+      summary: Delete user by ID (admin)
+      responses:
+        '200':
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/admin/dashboard/stats:
+    get:
+      tags: [Admin]
+      summary: Admin dashboard stats
+      responses:
+        '200':
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/jobs:
+    post:
+      tags: [Jobs]
+      summary: Create job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreateRequest'
+      responses:
+        '201':
+          description: Job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    get:
+      tags: [Jobs]
+      summary: List jobs
+      security: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 10 }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: search
+          schema: { type: string }
+      responses:
+        '200':
+          description: Jobs listed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/jobs/search:
+    get:
+      tags: [Jobs]
+      summary: Search jobs with filters
+      security: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 10 }
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum: [Newest, Oldest]
+        - in: query
+          name: jobTitle
+          schema: { type: string }
+        - in: query
+          name: jobLocation
+          schema: { type: string }
+        - in: query
+          name: jobType
+          schema: { type: string }
+        - in: query
+          name: experienceLevel
+          schema: { type: string }
+        - in: query
+          name: jobCategory
+          schema: { type: string }
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/jobs/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Jobs]
+      summary: Get job by ID
+      security: []
+      responses:
+        '200':
+          description: Job fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    put:
+      tags: [Jobs]
+      summary: Update job by ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobUpdateRequest'
+      responses:
+        '200':
+          description: Job updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    delete:
+      tags: [Jobs]
+      summary: Delete job by ID
+      responses:
+        '200':
+          description: Job deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/jobs/employer/my-jobs:
+    get:
+      tags: [Jobs]
+      summary: Get logged-in employer jobs
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 5 }
+        - in: query
+          name: searchQuery
+          schema: { type: string }
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [Active, Inactive]
+      responses:
+        '200':
+          description: Employer jobs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/applications:
+    post:
+      tags: [Applications]
+      summary: Submit job application
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ApplicationSubmitRequest'
+      responses:
+        '201':
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    get:
+      tags: [Applications]
+      summary: Get all applications
+      security: []
+      responses:
+        '200':
+          description: Applications list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/applications/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Applications]
+      summary: Get application by ID
+      security: []
+      responses:
+        '200':
+          description: Application fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    delete:
+      tags: [Applications]
+      summary: Delete application by ID
+      responses:
+        '200':
+          description: Application deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/applications/{id}/status:
+    patch:
+      tags: [Applications]
+      summary: Update application status
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [Pending, Reviewing, Shortlisted, Rejected, Accepted]
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/applications/job/{jobId}:
+    get:
+      tags: [Applications]
+      summary: Get applications by job ID
+      security: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 10 }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: searchQuery
+          schema: { type: string }
+        - in: query
+          name: sortBy
+          schema: { type: string }
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: Applications for job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/applications/job/{jobId}/with-score:
+    get:
+      tags: [Applications]
+      summary: Get applications with AI score
+      security: []
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Applications with score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/applications/talent/my-applications:
+    get:
+      tags: [Applications]
+      summary: Get my applications (talent)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: My applications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/saved-jobs/add:
+    post:
+      tags: [Saved Jobs]
+      summary: Add saved job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jobId]
+              properties:
+                jobId:
+                  type: string
+      responses:
+        '200':
+          description: Saved job added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/saved-jobs/{jobId}:
+    delete:
+      tags: [Saved Jobs]
+      summary: Remove saved job
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Saved job removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/notifications/{userId}:
+    get:
+      tags: [Notifications]
+      summary: Get notifications by userId
+      security: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Notifications fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/categories:
+    get:
+      tags: [Categories]
+      summary: Get active categories
+      security: []
+      responses:
+        '200':
+          description: Categories list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    post:
+      tags: [Categories]
+      summary: Create category
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                icon: { type: string }
+                color: { type: string, example: '#0066cc' }
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/categories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Categories]
+      summary: Get category by ID
+      security: []
+      responses:
+        '200':
+          description: Category fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    put:
+      tags: [Categories]
+      summary: Update category by ID
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                icon: { type: string }
+                color: { type: string }
+                isActive: { type: boolean }
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    delete:
+      tags: [Categories]
+      summary: Delete category by ID
+      security: []
+      responses:
+        '200':
+          description: Category deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/feedback:
+    post:
+      tags: [Feedback]
+      summary: Submit feedback
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [subject, description, issueType]
+              properties:
+                subject: { type: string }
+                description: { type: string }
+                issueType:
+                  type: string
+                  enum: [bug, feature_request, account_issue, other]
+                screenshot:
+                  type: string
+                  format: binary
+                attachment:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Feedback submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    get:
+      tags: [Feedback]
+      summary: Get all feedback (admin-only in controller)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 10 }
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [open, in_progress, resolved, closed]
+      responses:
+        '200':
+          description: Feedback list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/feedback/my-feedback:
+    get:
+      tags: [Feedback]
+      summary: Get current user feedback
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: My feedback
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/feedback/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Feedback]
+      summary: Get feedback by ID
+      responses:
+        '200':
+          description: Feedback fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    patch:
+      tags: [Feedback]
+      summary: Update feedback (admin-only in controller)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [open, in_progress, resolved, closed]
+                priority:
+                  type: string
+                  enum: [low, medium, high]
+                resolutionNotes:
+                  type: string
+      responses:
+        '200':
+          description: Feedback updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+    delete:
+      tags: [Feedback]
+      summary: Delete feedback (admin-only in controller)
+      responses:
+        '200':
+          description: Feedback deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/feedback/stats/all:
+    get:
+      tags: [Feedback]
+      summary: Feedback stats (admin-only in controller)
+      responses:
+        '200':
+          description: Feedback stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+
+  /api/recommend/{candidateId}:
+    get:
+      tags: [Recommendation]
+      summary: Get recommendations for candidate
+      parameters:
+        - in: path
+          name: candidateId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: top_n
+          schema: { type: integer, default: 10 }
+        - in: query
+          name: threshold
+          schema: { type: number, format: float }
+      responses:
+        '200':
+          description: Recommendation list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /api/extracted-candidates/{candidateId}:
+    get:
+      tags: [Extracted Candidate]
+      summary: Get extracted candidate profile
+      parameters:
+        - in: path
+          name: candidateId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Extracted profile found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardSuccess'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPath:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Not authorized to access this route
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    StandardSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation successful
+        data:
+          oneOf:
+            - type: object
+            - type: array
+              items:
+                type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Internal server error
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+
+    TalentRegisterRequest:
+      type: object
+      required: [fname, lname, email, password, confirmPassword, phoneNumber]
+      properties:
+        fname: { type: string }
+        lname: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6 }
+        confirmPassword: { type: string, minLength: 6 }
+        phoneNumber: { type: string }
+
+    EmployerRegisterRequest:
+      type: object
+      required: [companyName, contactName, email, password, confirmPassword, phoneNumber]
+      properties:
+        companyName: { type: string }
+        contactName: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6 }
+        confirmPassword: { type: string, minLength: 6 }
+        phoneNumber: { type: string }
+
+    AdminRegisterRequest:
+      type: object
+      required: [email, password, confirmPassword]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6 }
+        confirmPassword: { type: string, minLength: 6 }
+
+    AuthSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Login successful
+        token:
+          type: string
+          example: eyJhbGciOi...
+        data:
+          type: object
+          additionalProperties: true
+
+    JobCreateRequest:
+      type: object
+      required:
+        - jobTitle
+        - companyName
+        - jobLocation
+        - jobType
+        - experienceLevel
+        - jobCategory
+        - jobDescription
+        - applicationDeadline
+        - responsibilities
+        - qualifications
+        - tags
+      properties:
+        jobTitle: { type: string }
+        companyName: { type: string }
+        jobLocation: { type: string }
+        jobType: { type: string }
+        experienceLevel: { type: string }
+        jobCategory: { type: string }
+        jobDescription: { type: string }
+        applicationDeadline: { type: string }
+        responsibilities:
+          type: array
+          items: { type: string }
+        qualifications:
+          type: array
+          items: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+
+    JobUpdateRequest:
+      type: object
+      properties:
+        jobTitle: { type: string }
+        companyName: { type: string }
+        jobLocation: { type: string }
+        jobType: { type: string }
+        experienceLevel: { type: string }
+        jobCategory: { type: string }
+        jobDescription: { type: string }
+        applicationDeadline: { type: string }
+        responsibilities:
+          type: array
+          items: { type: string }
+        qualifications:
+          type: array
+          items: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        status:
+          type: string
+          enum: [Active, Inactive, Closed]
+
+    ApplicationSubmitRequest:
+      type: object
+      required:
+        - jobId
+        - talentId
+        - fullName
+        - email
+        - phoneNumber
+        - currentLocation
+        - currentJobTitle
+        - yearsOfExperience
+        - currentCompany
+        - noticePeriod
+        - keySkills
+        - highestQualification
+        - resume
+      properties:
+        jobId: { type: string }
+        talentId: { type: string }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        phoneNumber: { type: string }
+        currentLocation: { type: string }
+        currentJobTitle: { type: string }
+        yearsOfExperience: { type: number }
+        currentCompany: { type: string }
+        noticePeriod: { type: string }
+        expectedSalary: { type: string }
+        keySkills:
+          type: string
+          description: JSON string array or CSV
+          example: '["Flutter","Dart"]'
+        highestQualification: { type: string }
+        relevantCertifications:
+          type: string
+          description: JSON string array or CSV
+        coverLetter: { type: string }
+        portfolioUrl: { type: string }
+        linkedinUrl: { type: string }
+        githubUrl: { type: string }
+        resume:
+          type: string
+          format: binary
+        coverLetterDocument:
+          type: string
+          format: binary
