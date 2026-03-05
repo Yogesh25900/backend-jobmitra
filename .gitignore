@@ -7,3 +7,4 @@ dist/
 
 ER_DIAGRAM.md
 /public/*/*
+coverage/
