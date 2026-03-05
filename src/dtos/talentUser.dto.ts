@@ -20,7 +20,7 @@ export const createTalentDto = TalentUserSchema.pick({
 
 export const updateTalentDto = TalentUserSchema.partial().extend({
   confirmPassword: z.string().min(6).optional(),
-  profilePicturePath: z.string().optional(), // new optional field for uploaded file
+  profilePicturePath: z.string().optional(), 
 
 }).refine((data) => {
   if (data.password || data.confirmPassword) {
@@ -37,20 +37,20 @@ export const loginTalentDto = z.object({
   password: z.string().min(6, "Password must be at least 6 characters long"),
 });
 
-// Password reset DTOs
+export const googleLoginTalentDto = z.object({
+  credential: z.string().min(1, "Google credential is required"),
+});
 
-// Step 1: Request OTP via email
+
 export const sendPasswordResetOtpDto = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email format"),
 });
 
-// Step 2: Verify OTP (separate validation, does not reset password)
 export const verifyOTPDto = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email format"),
   otp: z.string().length(6, "OTP must be 6 digits").regex(/^\d+$/, "OTP must contain only digits"),
 });
 
-// Step 3: Reset password (OTP already verified, only password submission)
 export const resetPasswordDto = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email format"),
   newPassword: z.string().min(6, "Password must be at least 6 characters long"),
@@ -60,7 +60,6 @@ export const resetPasswordDto = z.object({
   path: ["confirmPassword"],
 });
 
-// Backward compatibility: combined DTO for single-step reset (deprecated)
 export const verifyOtpAndResetPasswordDto = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email format"),
   otp: z.string().length(6, "OTP must be 6 digits").regex(/^\d+$/, "OTP must contain only digits"),
@@ -76,6 +75,8 @@ export type UpdateTalentDTO = z.infer<typeof updateTalentDto>;
 export type CreateTalentDTO = z.infer<typeof createTalentDto>;
 
 export type LoginTalentDTO = z.infer<typeof loginTalentDto>;
+
+export type GoogleLoginTalentDTO = z.infer<typeof googleLoginTalentDto>;
 
 export type SendPasswordResetOtpDTO = z.infer<typeof sendPasswordResetOtpDto>;
 

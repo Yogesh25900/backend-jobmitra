@@ -6,12 +6,6 @@ import { AdminUserModel } from "../models/AdminUser.model";
 import { JWT_SECRET } from "../config";
 import { EmployerUserModel } from "../models/employerUser.model";
 
-// import Student from "../models/student_model";
-// import DonorUser from "../models/donoruser_model";
-
-/* ----------------------------------
-   Extend Express Request type
------------------------------------ */
 declare global {
   namespace Express {
     interface Request {
@@ -20,37 +14,24 @@ declare global {
   }
 }
 
-/* ----------------------------------
-   JWT Payload Interface
------------------------------------ */
 interface DecodedToken extends JwtPayload {
   id: string;
 }
 
-/* ----------------------------------
-   Find user across all collections
------------------------------------ */
 const findUserById = async (id: string) => {
   return (
-    // (await Student.findById(id)) ||
     (await TalentUserModel.findById(id)) ||
     (await EmployerUserModel.findById(id)) ||
     (await AdminUserModel.findById(id))
-    // (await DonorUser.findById(id))
   );
 };
 
-/* ----------------------------------
-   Protect Middleware
------------------------------------ */
 export const protect = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     console.log('\n [PROTECT MIDDLEWARE] Checking authorization...');
     console.log('Path:', req.path);
     console.log(' Auth Header:', req.headers.authorization?.substring(0, 50));
-    
     let token: string | undefined;
-
     const authHeader = req.headers.authorization?.toString();
     if (authHeader && authHeader.toLowerCase().startsWith("bearer")) {
       token = authHeader.split(" ")[1];
@@ -88,7 +69,6 @@ export const protect = asyncHandler(
         role: user.role
       });
       
-      // Attach both the user object and a userId property for convenience
       req.user = user;
       (req as any).user.userId = user._id.toString();
       
@@ -102,9 +82,6 @@ export const protect = asyncHandler(
   }
 );
 
-/* ----------------------------------
-   Role Authorization Middleware
------------------------------------ */
 export const authorize =
   (...roles: string[]) =>
   (req: Request, res: Response, next: NextFunction) => {

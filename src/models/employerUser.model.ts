@@ -31,11 +31,10 @@ const employerUserSchema: Schema = new Schema(
     passwordResetOtpExpires: { type: Date },
   },
   {
-    timestamps: true, // includes createdAt and updatedAt
+    timestamps: true, 
   }
 );
 
-// Interface for TypeScript
 export interface IEmployerUser extends EmployerUserType, Document {
   _id: mongoose.Types.ObjectId;
   createdAt: Date;

@@ -2,6 +2,7 @@ import { TalentUserModel } from "../../models/talentUser_model";
 import request from 'supertest';
 import app from '../../app';
 import { AdminUserModel } from "../../models/AdminUser.model";
+import { EmployerUserModel } from "../../models/employerUser.model";
 
 describe('Authentication Integration Tests', () => {
     const talentTestUser = {
@@ -18,14 +19,20 @@ describe('Authentication Integration Tests', () => {
         confirmPassword: 'adminpassword123',
     };
 
+    const employerTestEmail = "employer.test@example.com";
+
     beforeAll(async () => {
+        // Clean up only test-specific emails
         await AdminUserModel.deleteMany({ email: adminTestUser.email });
         await TalentUserModel.deleteMany({ email: talentTestUser.email });
+        await EmployerUserModel.deleteMany({ email: employerTestEmail });
     });
 
     afterAll(async () => {
+        // Clean up only test-specific emails
         await AdminUserModel.deleteMany({ email: adminTestUser.email });
         await TalentUserModel.deleteMany({ email: talentTestUser.email });
+        await EmployerUserModel.deleteMany({ email: employerTestEmail });
     });
 
     describe('Talent User Registration Tests', () => {

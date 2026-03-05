@@ -6,13 +6,11 @@ import { uploadImage, parseFormData, uploadFiles } from "../middlewares/uploads"
 const router = Router();
 const talentController = new TalentUserController();
 
-// Debug middleware - log all requests to this router
 router.use((req, res, next) => {
   console.log(' [TALENT ROUTER] Incoming request:', req.method, req.path);
   next();
 });
 
-// Custom middleware to parse JSON strings from FormData
 const parseJsonFields = (req: Request, res: Response, next: NextFunction) => {
   console.log('\n [MIDDLEWARE] parseJsonFields - Processing request body');
   
@@ -37,8 +35,8 @@ const parseJsonFields = (req: Request, res: Response, next: NextFunction) => {
 
 router.post("/register", parseFormData, (req, res) => talentController.registerTalent(req, res));
 router.post("/login", parseFormData, (req, res) => talentController.loginTalent(req, res));
+router.post("/google-login", parseFormData, (req, res) => talentController.googleLoginTalent(req, res));
 
-// Get current user profile - must be before /:id route
 router.get("/profile/me", (req, res, next) => {
   
   next();
@@ -63,17 +61,13 @@ router.put("/:id", protect, uploadFiles.single('resume'), parseJsonFields, (req,
   return talentController.updateTalent(req, res);
 });
 
-// Password reset routes
-// Step 1: Request OTP via email
+
 router.post('/forgot-password', parseFormData, (req, res) => talentController.sendPasswordResetOtp(req, res));
 
-// Step 2: Verify OTP (NEW ENDPOINT)
 router.post('/verify-otp', parseFormData, (req, res) => talentController.verifyOTP(req, res));
 
-// Step 3: Reset password with new password (NEW ENDPOINT)
 router.post('/reset-password', parseFormData, (req, res) => talentController.resetPassword(req, res));
 
-// Backward compatibility: Combined endpoint (deprecated, but maintained for older clients)
 router.post('/reset-password-legacy', parseFormData, (req, res) => talentController.verifyOtpAndResetPassword(req, res));
 
 export default router;

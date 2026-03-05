@@ -1,16 +1,18 @@
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 import { CreateTalentDTO, LoginTalentDTO, UpdateTalentDTO, SendPasswordResetOtpDTO, VerifyOTPDTO, ResetPasswordDTO, VerifyOtpAndResetPasswordDTO } from "../dtos/talentUser.dto";
 import { TalentUserModel } from "../models/talentUser_model";
 import { HttpError } from "../errors/http-error";
-import { JWT_SECRET } from "../config";
+import { GOOGLE_CLIENT_ID, JWT_SECRET } from "../config";
 import { TalentUserRepository } from "../repositories/talentUser.repository";
 import { MailService } from "./mail/mail.service";
 import { MailType } from "./mail/mail.types";
 import { getMailTemplate } from "./mail/mail.templates";
-import { ta } from "zod/v4/locales";
+import { notifyAdminOnNewTalent } from "./notification.service";
 
 let talentUserRepository = new TalentUserRepository();
+const googleClient = new OAuth2Client();
 
 type OtpRecord = {
   otp: string;
@@ -36,6 +38,24 @@ const compareOTP = async (plainOtp: string, hashedOtp: string): Promise<boolean>
 };
 
 export class TalentUserService {
+  private signTalentToken(talent: {
+    _id: unknown;
+    email: string;
+    fname?: string;
+    lname?: string;
+    role?: string;
+  }) {
+    const payload = {
+      id: talent._id,
+      email: talent.email,
+      fname: talent.fname,
+      lname: talent.lname,
+      role: talent.role,
+    };
+
+    return jwt.sign(payload, JWT_SECRET as string, { expiresIn: "24h" });
+  }
+
   // Register a new talent
   async registerTalent(talentData: CreateTalentDTO) {
     // Check if email already exists
@@ -52,6 +72,12 @@ export class TalentUserService {
     const { confirmPassword, ...dataToSave } = talentData;
 
     const newTalent = await talentUserRepository.createTalent(dataToSave);
+    
+    // Notify admin about new talent registration
+    if (newTalent?._id) {
+      await notifyAdminOnNewTalent(newTalent._id.toString());
+    }
+    
     return newTalent;
   }
 
@@ -67,16 +93,83 @@ export class TalentUserService {
       throw new HttpError(401, "Invalid credentials");
     }
 
-    const payload = {
-      id: talent._id,
-      email: talent.email,
-      fname: talent.fname,
-      lname: talent.lname,
-      role: talent.role,
-    };
-
-    const token = jwt.sign(payload, JWT_SECRET as string, { expiresIn: "24h" });
+    const token = this.signTalentToken(talent);
     return { token, talent };
+  }
+
+  async googleLoginTalent(credential: string) {
+    if (!GOOGLE_CLIENT_ID) {
+      throw new HttpError(500, "Google client ID is not configured");
+    }
+
+    let ticket;
+    try {
+      ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: GOOGLE_CLIENT_ID,
+      });
+    } catch {
+      throw new HttpError(401, "Invalid Google credential");
+    }
+
+    const payload = ticket.getPayload();
+    const googleId = payload?.sub;
+    const email = payload?.email?.toLowerCase();
+
+    if (!googleId || !email) {
+      throw new HttpError(400, "Invalid Google credential");
+    }
+
+    const firstName = payload?.given_name || payload?.name?.split(" ")[0] || "Google";
+    const lastName = payload?.family_name || payload?.name?.split(" ").slice(1).join(" ") || "User";
+    const googleProfilePicture = payload?.picture || "";
+
+    const talentByGoogleId = await talentUserRepository.getTalentByGoogleId(googleId);
+    if (talentByGoogleId) {
+      const token = this.signTalentToken(talentByGoogleId);
+      return { token, talent: talentByGoogleId, isNewUser: false };
+    }
+
+    const existingTalentByEmail = await talentUserRepository.getTalentByEmail(email);
+    if (existingTalentByEmail) {
+      if (existingTalentByEmail.googleId && existingTalentByEmail.googleId !== googleId) {
+        throw new HttpError(409, "Email already linked to another Google account");
+      }
+
+      const linkedTalent = await talentUserRepository.updateTalent(existingTalentByEmail._id.toString(), {
+        googleId,
+        googleProfilePicture,
+        role: "candidate",
+        fname: existingTalentByEmail.fname || firstName,
+        lname: existingTalentByEmail.lname || lastName,
+      } as any);
+
+      if (!linkedTalent) {
+        throw new HttpError(500, "Failed to link Google account");
+      }
+
+      const token = this.signTalentToken(linkedTalent);
+      return { token, talent: linkedTalent, isNewUser: false };
+    }
+
+    try {
+      const newTalent = await talentUserRepository.createTalent({
+        googleId,
+        email,
+        fname: firstName,
+        lname: lastName,
+        googleProfilePicture,
+        role: "candidate",
+      } as any);
+
+      const token = this.signTalentToken(newTalent);
+      return { token, talent: newTalent, isNewUser: true };
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        throw new HttpError(409, "Email already in use");
+      }
+      throw error;
+    }
   }
 
   // Get all talents
@@ -113,7 +206,7 @@ export class TalentUserService {
   async sendPasswordResetOtp(data: SendPasswordResetOtpDTO) {
     const talent = await talentUserRepository.getTalentByEmail(data.email);
     if (!talent) {
-      throw new HttpError(404, "Email not found");
+      throw new HttpError(404, "This email is not registered.");
     }
 
     const otp = generateOTP();
@@ -127,7 +220,7 @@ export class TalentUserService {
       type: "talent",
     });
 
-    console.log("✅ OTP generated and hashed for:", data.email);
+    console.log("OTP generated and hashed for:", data.email);
 
     // Send plain OTP via email (user will see actual OTP, not hash)
     const mailTemplate = getMailTemplate(
@@ -242,7 +335,7 @@ export class TalentUserService {
     password: hashedPassword,
   });
 
-  otpStore.delete(data.email); // ✅ IMPORTANT
+  otpStore.delete(data.email); 
 
   return {
     message: "Password reset successfully",

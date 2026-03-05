@@ -3,6 +3,7 @@ import { IEmployerUser, EmployerUserModel } from "../models/employerUser.model";
 export interface IEmployerUserRepository {
   createEmployer(employerData: Partial<IEmployerUser>): Promise<IEmployerUser>;
   getEmployerByEmail(email: string): Promise<IEmployerUser | null>;
+  getEmployerByGoogleId(googleId: string): Promise<IEmployerUser | null>;
   getEmployerById(id: string): Promise<IEmployerUser | null>;
   getAllEmployers(): Promise<IEmployerUser[]>;
   updateEmployer(id: string, updateData: Partial<IEmployerUser>): Promise<IEmployerUser | null>;
@@ -18,6 +19,10 @@ export class EmployerUserRepository implements IEmployerUserRepository {
 
   async getEmployerByEmail(email: string): Promise<IEmployerUser | null> {
     return await EmployerUserModel.findOne({ email });
+  }
+
+  async getEmployerByGoogleId(googleId: string): Promise<IEmployerUser | null> {
+    return await EmployerUserModel.findOne({ googleId });
   }
 
   async getEmployerById(id: string): Promise<IEmployerUser | null> {
